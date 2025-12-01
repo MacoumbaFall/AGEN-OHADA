@@ -1,0 +1,3 @@
+[app]
+name = "AGEN-OHADA"
+main-module = "src.main"
