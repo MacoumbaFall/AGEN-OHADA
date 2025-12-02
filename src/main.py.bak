@@ -1,0 +1,25 @@
+import rio
+from src.pages.login import LoginPage
+from src.pages.dashboard import DashboardPage
+
+class App(rio.Component):
+    # L'état de l'utilisateur connecté
+    # Pour l'instant, on utilise un booléen simple. Plus tard, on stockera l'objet User.
+    is_logged_in: bool = False
+
+    def on_login_success(self):
+        self.is_logged_in = True
+
+    def build(self) -> rio.Component:
+        if not self.is_logged_in:
+            return LoginPage(on_success=self.on_login_success)
+        else:
+            return DashboardPage()
+
+app = rio.App(
+    build=App,
+    name="AGEN-OHADA"
+)
+
+if __name__ == "__main__":
+    app.run_in_browser(port=8000)
