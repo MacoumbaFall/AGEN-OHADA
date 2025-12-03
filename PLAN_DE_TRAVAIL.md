@@ -65,28 +65,28 @@ Mettre en place l'infrastructure de base et le système d'authentification.
 
 ---
 
-## Phase 2 : Module Gestion des Dossiers (En cours)
+## Phase 2 : Module Gestion des Dossiers (En cours - 85% complété)
 
 ### Objectif
 Permettre la création, consultation et gestion des dossiers notariaux.
 
 ### Tâches
 1. **CRUD Dossiers**
-   - [ ] Formulaire de création de dossier
-   - [ ] Numérotation automatique (Format: ANNEE-MOIS-SEQ)
-   - [ ] Liste des dossiers (avec filtres et recherche)
-   - [ ] Fiche détaillée d'un dossier
-   - [ ] Modification et suppression de dossier
+   - [x] Formulaire de création de dossier
+   - [x] Numérotation automatique (Format: ANNEE-MOIS-SEQ)
+   - [x] Liste des dossiers (avec filtres et recherche)
+   - [x] Fiche détaillée d'un dossier
+   - [x] Modification et suppression de dossier
 
 2. **Gestion des Parties**
-   - [ ] Formulaire d'ajout de client (Personne Physique)
-   - [ ] Formulaire d'ajout de client (Personne Morale)
-   - [ ] Liaison Client <-> Dossier avec rôle (Vendeur, Acquéreur, etc.)
-   - [ ] Détection des doublons clients
+   - [x] Formulaire d'ajout de client (Personne Physique)
+   - [x] Formulaire d'ajout de client (Personne Morale)
+   - [x] Liaison Client <-> Dossier avec rôle (Vendeur, Acquéreur, etc.)
+   - [x] Détection des doublons clients
 
 3. **Statuts et Workflow**
-   - [ ] Gestion des statuts (OUVERT, INSTRUCTION, SIGNATURE, etc.)
-   - [ ] Changement de statut avec validation
+   - [x] Gestion des statuts (OUVERT, INSTRUCTION, SIGNATURE, etc.)
+   - [x] Changement de statut avec validation
    - [ ] Historique des changements de statut
 
 4. **GED (Gestion Électronique de Documents)**
@@ -96,9 +96,9 @@ Permettre la création, consultation et gestion des dossiers notariaux.
    - [ ] Téléchargement
 
 ### Livrables
-- Module complet de gestion des dossiers
-- Base de données clients opérationnelle
-- Système de GED fonctionnel
+- ✅ Module complet de gestion des dossiers (CRUD)
+- ✅ Base de données clients opérationnelle
+- ⏳ Système de GED fonctionnel
 
 ### Durée estimée : 5-7 jours
 

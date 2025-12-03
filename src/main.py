@@ -3,6 +3,10 @@ from src.pages.login import LoginPage
 from src.pages.dashboard import DashboardPage
 from src.pages.dossiers import DossierListPage
 from src.pages.dossier_form import DossierFormPage
+from src.pages.dossier_detail import DossierDetailPage
+from src.pages.dossier_edit import DossierEditPage
+from src.database import get_db
+from src.models.dossier import Dossier
 
 class MainApp(rio.Component):
     """
@@ -12,6 +16,11 @@ class MainApp(rio.Component):
     is_authenticated: bool = False
     current_user: str = ""
     current_page: str = "dashboard"
+    current_dossier_id: int = None
+    
+    # Delete confirmation state
+    show_delete_dialog: bool = False
+    dossier_to_delete_id: int = None
     
     def on_login_success(self, username: str):
         """Called when user successfully logs in"""
@@ -26,8 +35,42 @@ class MainApp(rio.Component):
         self.current_page = "dashboard"
         print("👋 User logged out")
         
-    def navigate_to(self, page: str):
+    def navigate_to(self, page: str, dossier_id: int = None):
+        """Navigate to a specific page"""
         self.current_page = page
+        self.current_dossier_id = dossier_id
+    
+    def on_delete_request(self, dossier_id: int):
+        """Show delete confirmation dialog"""
+        self.dossier_to_delete_id = dossier_id
+        self.show_delete_dialog = True
+    
+    def on_delete_confirm(self):
+        """Confirm and execute deletion"""
+        try:
+            db = next(get_db())
+            dossier = db.query(Dossier).filter(Dossier.id == self.dossier_to_delete_id).first()
+            
+            if dossier:
+                # Soft delete: change status to ARCHIVE
+                dossier.statut = "ARCHIVE"
+                db.commit()
+                print(f"✅ Dossier {dossier.numero_dossier} archived successfully")
+                
+                # Navigate back to list
+                self.navigate_to("dossiers")
+            
+        except Exception as e:
+            print(f"❌ Error deleting dossier: {str(e)}")
+            db.rollback()
+        finally:
+            self.show_delete_dialog = False
+            self.dossier_to_delete_id = None
+    
+    def on_delete_cancel(self):
+        """Cancel deletion"""
+        self.show_delete_dialog = False
+        self.dossier_to_delete_id = None
     
     def build(self) -> rio.Component:
         # Show login page if not authenticated
@@ -45,18 +88,32 @@ class MainApp(rio.Component):
             content = DashboardPage()
         elif self.current_page == "dossiers":
             content = DossierListPage(
-                on_new_dossier=lambda: self.navigate_to("dossier_new")
+                on_new_dossier=lambda: self.navigate_to("dossier_new"),
+                on_view_dossier=lambda dossier_id: self.navigate_to("dossier_detail", dossier_id)
             )
         elif self.current_page == "dossier_new":
             content = DossierFormPage(
                 on_cancel=lambda: self.navigate_to("dossiers"),
                 on_success=lambda: self.navigate_to("dossiers")
             )
+        elif self.current_page == "dossier_detail":
+            content = DossierDetailPage(
+                dossier_id=self.current_dossier_id,
+                on_back=lambda: self.navigate_to("dossiers"),
+                on_edit=lambda dossier_id: self.navigate_to("dossier_edit", dossier_id),
+                on_delete=self.on_delete_request
+            )
+        elif self.current_page == "dossier_edit":
+            content = DossierEditPage(
+                dossier_id=self.current_dossier_id,
+                on_cancel=lambda: self.navigate_to("dossier_detail", self.current_dossier_id),
+                on_success=lambda dossier_id: self.navigate_to("dossier_detail", dossier_id)
+            )
         else:
             content = rio.Text("Page not found")
-            
-        # Layout with Sidebar and Content
-        return rio.Row(
+        
+        # Main layout
+        main_layout = rio.Row(
             # Sidebar
             rio.Card(
                 rio.Column(
@@ -73,7 +130,7 @@ class MainApp(rio.Component):
                     rio.Button(
                         "Dossiers", 
                         icon="material/folder", 
-                        style="major" if self.current_page == "dossiers" else "colored-text",
+                        style="major" if self.current_page.startswith("dossier") else "colored-text",
                         on_press=lambda: self.navigate_to("dossiers")
                     ),
                     rio.Button(
@@ -127,6 +184,47 @@ class MainApp(rio.Component):
             grow_x=True,
             grow_y=True
         )
+        
+        # Overlay delete confirmation dialog if needed
+        if self.show_delete_dialog:
+            return rio.Overlay(
+                main_layout,
+                rio.Card(
+                    rio.Column(
+                        rio.Icon("material/warning", fill=rio.Color.from_hex("f59e0b"), min_width=4, min_height=4),
+                        rio.Text("Confirmer la suppression", style="heading2"),
+                        rio.Text(
+                            "Êtes-vous sûr de vouloir archiver ce dossier ? Cette action peut être annulée en changeant le statut.",
+                            style="text-dim"
+                        ),
+                        rio.Spacer(height=2),
+                        rio.Row(
+                            rio.Button(
+                                "Annuler",
+                                on_press=self.on_delete_cancel,
+                                style="minor"
+                            ),
+                            rio.Spacer(),
+                            rio.Button(
+                                "Confirmer la suppression",
+                                icon="material/delete",
+                                on_press=self.on_delete_confirm,
+                                style="major"
+                            ),
+                            spacing=2
+                        ),
+                        spacing=1,
+                        margin=2,
+                        align_x=0.5
+                    ),
+                    color=rio.Color.WHITE,
+                    min_width=30,
+                    align_x=0.5,
+                    align_y=0.5
+                )
+            )
+        
+        return main_layout
 
 # Create the Rio app
 app = rio.App(
@@ -135,4 +233,10 @@ app = rio.App(
 )
 
 if __name__ == "__main__":
-    app.run_in_browser(port=8000)
+    # Use run_as_web_server to allow IDE integrated browser
+    # Access at: http://localhost:8000
+    app.run_as_web_server(
+        host="localhost",
+        port=8000,
+        quiet=False
+    )
