@@ -12,7 +12,7 @@ class DashboardPage(rio.Component):
                         spacing=1
                     ),
                     margin=1,
-                    grow=1
+                    grow_x=True
                 ),
                 rio.Card(
                     rio.Column(
@@ -21,7 +21,7 @@ class DashboardPage(rio.Component):
                         spacing=1
                     ),
                     margin=1,
-                    grow=1
+                    grow_x=True
                 ),
                 rio.Card(
                     rio.Column(
@@ -30,12 +30,12 @@ class DashboardPage(rio.Component):
                         spacing=1
                     ),
                     margin=1,
-                    grow=1
+                    grow_x=True
                 ),
                 spacing=2
             ),
             rio.Spacer(height=2),
-            rio.Text("Bienvenue sur AGEN-OHADA", style="text-dim"),
+            rio.Text("Bienvenue sur AGEN-OHADA", style=rio.TextStyle(fill=rio.Color.GREY)),
             spacing=2,
             margin=2
         )

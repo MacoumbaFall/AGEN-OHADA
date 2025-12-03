@@ -10,7 +10,7 @@ class LoginPage(rio.Component):
     
     # Callback function to call on successful login
     # This will be passed by the parent component
-    on_success: rio.EventHandler[[]] = None
+    on_success: rio.EventHandler[str] = None
 
     def on_login(self):
         db = next(get_db())
@@ -27,7 +27,7 @@ class LoginPage(rio.Component):
         
         # Trigger the success event with username
         if self.on_success:
-            self.on_success()
+            self.on_success(user.username)
 
     def build(self) -> rio.Component:
         return rio.Column(
@@ -35,15 +35,15 @@ class LoginPage(rio.Component):
             rio.Text("Connexion", style="heading2"),
             rio.TextInput(
                 label="Nom d'utilisateur",
-                value=self.bind().username,
+                text=self.bind().username,
             ),
             rio.TextInput(
                 label="Mot de passe",
-                value=self.bind().password,
+                text=self.bind().password,
                 is_secret=True,
             ),
             rio.Button("Se connecter", on_press=self.on_login),
-            rio.Text(self.error_message, style=rio.TextStyle(fill=rio.Color.RED)) if self.error_message else None,
+            rio.Text(self.error_message, style=rio.TextStyle(fill=rio.Color.RED)) if self.error_message else rio.Text(""),
             spacing=1,
             margin=2,
             align_x=0.5,

@@ -26,46 +26,46 @@ Version: 1.0.0 | Date de création: 01/12/2025
 
 ---
 
-## Phase 1 : Socle Technique et Authentification (MVP)
+## Phase 1 : Socle Technique et Authentification (MVP) - ✅ TERMINÉ
 
 ### Objectif
 Mettre en place l'infrastructure de base et le système d'authentification.
 
 ### Tâches
 1. **Configuration Base de Données**
-   - [ ] Installer PostgreSQL
-   - [ ] Créer la base de données `agen_ohada_db`
-   - [ ] Exécuter le script `schema.sql`
-   - [ ] Tester la connexion depuis Python
+   - [x] Installer PostgreSQL
+   - [x] Créer la base de données `agen_ohada_db`
+   - [x] Exécuter le script `schema.sql`
+   - [x] Tester la connexion depuis Python
 
 2. **Modèles de Données (SQLAlchemy)**
-   - [ ] Créer `src/models/__init__.py`
-   - [ ] Créer `src/models/user.py` (Table Users)
-   - [ ] Créer `src/models/client.py` (Table Clients)
-   - [ ] Créer `src/models/dossier.py` (Table Dossiers)
-   - [ ] Créer la configuration de connexion DB
+   - [x] Créer `src/models/__init__.py`
+   - [x] Créer `src/models/user.py` (Table Users)
+   - [x] Créer `src/models/client.py` (Table Clients)
+   - [x] Créer `src/models/dossier.py` (Table Dossiers)
+   - [x] Créer la configuration de connexion DB
 
 3. **Système d'Authentification**
-   - [ ] Page de connexion (Login)
-   - [ ] Gestion des sessions utilisateur
-   - [ ] Hashage des mots de passe (bcrypt)
-   - [ ] Gestion des rôles (NOTAIRE, CLERC, COMPTABLE, etc.)
+   - [x] Page de connexion (Login)
+   - [x] Gestion des sessions utilisateur
+   - [x] Hashage des mots de passe (bcrypt)
+   - [x] Gestion des rôles (NOTAIRE, CLERC, COMPTABLE, etc.)
 
 4. **Interface de Base**
-   - [ ] Créer le layout principal (Header, Sidebar, Content)
-   - [ ] Menu de navigation
-   - [ ] Page d'accueil (Dashboard)
+   - [x] Créer le layout principal (Header, Sidebar, Content)
+   - [x] Menu de navigation
+   - [x] Page d'accueil (Dashboard)
 
 ### Livrables
-- Système d'authentification fonctionnel
-- Base de données opérationnelle
-- Interface de base navigable
+- ✅ Système d'authentification fonctionnel
+- ✅ Base de données opérationnelle
+- ✅ Interface de base navigable
 
 ### Durée estimée : 3-5 jours
 
 ---
 
-## Phase 2 : Module Gestion des Dossiers
+## Phase 2 : Module Gestion des Dossiers (En cours)
 
 ### Objectif
 Permettre la création, consultation et gestion des dossiers notariaux.
