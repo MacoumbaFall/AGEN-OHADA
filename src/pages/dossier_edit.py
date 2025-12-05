@@ -1,6 +1,7 @@
 import rio
 from src.database import get_db
 from src.models.dossier import Dossier, DossierHistorique
+from src.models.user import User
 from datetime import datetime, date
 
 class DossierEditPage(rio.Component):
@@ -8,6 +9,7 @@ class DossierEditPage(rio.Component):
     Form for editing an existing dossier
     """
     dossier_id: int
+    current_username: str = ""
     
     # Form fields
     intitule: str = ""
@@ -76,13 +78,20 @@ class DossierEditPage(rio.Component):
             
             # Check for status change
             if dossier.statut != self.statut:
+                # Get current user
+                user_id = None
+                if self.current_username:
+                    current_user = db.query(User).filter(User.username == self.current_username).first()
+                    if current_user:
+                        user_id = current_user.id
+
                 # Create history record
                 historique = DossierHistorique(
                     dossier_id=dossier.id,
                     ancien_statut=dossier.statut,
                     nouveau_statut=self.statut,
                     date_changement=datetime.utcnow(),
-                    # user_id=current_user.id if current_user else None, # TODO: Add user context
+                    user_id=user_id,
                     commentaire="Changement de statut via modification dossier"
                 )
                 db.add(historique)

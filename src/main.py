@@ -5,6 +5,7 @@ from src.pages.dossiers import DossierListPage
 from src.pages.dossier_form import DossierFormPage
 from src.pages.dossier_detail import DossierDetailPage
 from src.pages.dossier_edit import DossierEditPage
+from src.pages.templates import TemplatesPage
 from src.database import get_db
 from src.models.dossier import Dossier
 
@@ -106,9 +107,12 @@ class MainApp(rio.Component):
         elif self.current_page == "dossier_edit":
             content = DossierEditPage(
                 dossier_id=self.current_dossier_id,
+                current_username=self.current_user,
                 on_cancel=lambda: self.navigate_to("dossier_detail", self.current_dossier_id),
                 on_success=lambda dossier_id: self.navigate_to("dossier_detail", dossier_id)
             )
+        elif self.current_page == "templates":
+            content = TemplatesPage()
         else:
             content = rio.Text("Page not found")
         
@@ -134,8 +138,14 @@ class MainApp(rio.Component):
                         on_press=lambda: self.navigate_to("dossiers")
                     ),
                     rio.Button(
-                        "Actes", 
+                        "Modèles", 
                         icon="material/description", 
+                        style="major" if self.current_page == "templates" else "colored-text",
+                        on_press=lambda: self.navigate_to("templates")
+                    ),
+                    rio.Button(
+                        "Actes", 
+                        icon="material/gavel", 
                         style="colored-text",
                         on_press=lambda: print("Actes: Not implemented yet")
                     ),

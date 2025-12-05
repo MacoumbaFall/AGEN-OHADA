@@ -1,9 +1,10 @@
 import rio
 from src.database import get_db
-from src.models.dossier import Dossier, DossierParties, DossierHistorique
+from src.models.dossier import Dossier, DossierParties, DossierHistorique, Document
 from src.models.user import User
 from src.models.client import Client
 from src.pages.add_partie_dialog import AddPartieDialog
+from src.pages.add_document_dialog import AddDocumentDialog
 from datetime import datetime
 
 class DossierDetailPage(rio.Component):
@@ -17,6 +18,11 @@ class DossierDetailPage(rio.Component):
     show_add_partie_dialog: bool = False
     partie_to_delete: tuple = None  # (dossier_id, client_id)
     show_delete_partie_dialog: bool = False
+    
+    # GED State
+    show_add_document_dialog: bool = False
+    document_to_delete_id: int = None
+    show_delete_document_dialog: bool = False
     
     # Callbacks
     on_back: rio.EventHandler[[]] = None
@@ -105,6 +111,54 @@ class DossierDetailPage(rio.Component):
         """Cancel partie removal"""
         self.show_delete_partie_dialog = False
         self.partie_to_delete = None
+
+    # GED Handlers
+    def on_add_document_click(self):
+        self.show_add_document_dialog = True
+        
+    def on_add_document_success(self):
+        self.show_add_document_dialog = False
+        self.load_dossier()
+        
+    def on_add_document_cancel(self):
+        self.show_add_document_dialog = False
+        
+    def on_delete_document_request(self, doc_id: int):
+        self.document_to_delete_id = doc_id
+        self.show_delete_document_dialog = True
+        
+    def on_delete_document_confirm(self):
+        if not self.document_to_delete_id:
+            return
+            
+        try:
+            db = next(get_db())
+            document = db.query(Document).filter(Document.id == self.document_to_delete_id).first()
+            
+            if document:
+                # Remove file from disk
+                import os
+                if os.path.exists(document.chemin_fichier):
+                    try:
+                        os.remove(document.chemin_fichier)
+                    except:
+                        pass
+                
+                # Remove from db
+                db.delete(document)
+                db.commit()
+                self.load_dossier()
+                
+        except Exception as e:
+            print(f"Error deleting document: {str(e)}")
+            db.rollback()
+        finally:
+            self.show_delete_document_dialog = False
+            self.document_to_delete_id = None
+            
+    def on_delete_document_cancel(self):
+        self.show_delete_document_dialog = False
+        self.document_to_delete_id = None
     
     def get_statut_color(self, statut: str) -> rio.Color:
         """Return color based on status"""
@@ -334,6 +388,60 @@ class DossierDetailPage(rio.Component):
                         margin=2,
                         align_x=0.5
                     ),
+                    align_x=0.5,
+                    align_y=0.5
+                )
+            )
+        
+        # Overlay add document dialog
+        if self.show_add_document_dialog:
+            return rio.Overlay(
+                main_content,
+                rio.Card(
+                    AddDocumentDialog(
+                        dossier_id=self.dossier_id,
+                        on_cancel=self.on_add_document_cancel,
+                        on_success=self.on_add_document_success
+                    ),
+                    color=rio.Color.WHITE,
+                    min_width=40,
+                    align_x=0.5,
+                    align_y=0.5
+                )
+            )
+            
+        # Overlay delete document confirmation
+        if self.show_delete_document_dialog:
+            return rio.Overlay(
+                main_content,
+                rio.Card(
+                    rio.Column(
+                        rio.Icon("material/warning", fill=rio.Color.from_hex("f59e0b"), min_width=4, min_height=4),
+                        rio.Text("Supprimer ce document ?", style="heading2"),
+                        rio.Text(
+                            "Cette action est irréversible. Le fichier sera supprimé du disque.",
+                            style="text-dim"
+                        ),
+                        rio.Spacer(height=2),
+                        rio.Row(
+                            rio.Button(
+                                "Annuler",
+                                on_press=self.on_delete_document_cancel,
+                                style="minor"
+                            ),
+                            rio.Spacer(),
+                            rio.Button(
+                                "Confirmer",
+                                icon="material/delete",
+                                on_press=self.on_delete_document_confirm,
+                                style="major"
+                            ),
+                            spacing=2
+                        ),
+                        spacing=1,
+                        margin=2,
+                        align_x=0.5
+                    ),
                     color=rio.Color.WHITE,
                     min_width=30,
                     align_x=0.5,
@@ -348,11 +456,82 @@ class DossierDetailPage(rio.Component):
         if self.current_tab == "parties":
             return self._build_parties_tab()
         elif self.current_tab == "documents":
-            return rio.Text("Section Documents en cours de développement...", style="text-dim")
+            return self._build_documents_tab()
         elif self.current_tab == "historique":
             return self._build_historique_tab()
         return rio.Text("")
     
+    def _build_documents_tab(self) -> rio.Component:
+        """Build the documents tab content"""
+        db = next(get_db())
+        documents = db.query(Document).filter(Document.dossier_id == self.dossier_id).all()
+        
+        doc_cards = []
+        for doc in documents:
+            icon = "material/description"
+            if "pdf" in doc.chemin_fichier.lower():
+                icon = "material/picture_as_pdf"
+            elif "image" in doc.type_document.lower():
+                icon = "material/image"
+                
+            doc_cards.append(
+                rio.Card(
+                    rio.Row(
+                        rio.Icon(icon, fill=rio.Color.from_hex("3b82f6")),
+                        rio.Column(
+                            rio.Text(doc.titre, style="heading3"),
+                            rio.Text(f"{doc.type_document} - {doc.date_upload.strftime('%d/%m/%Y')}", style="text-dim"),
+                            spacing=0.3
+                        ),
+                        rio.Spacer(),
+                        rio.Button(
+                            "Ouvrir",
+                            icon="material/visibility",
+                            # In a real app, this would open the file URL
+                            # For local, we might need a way to serve files or just show path
+                            on_press=lambda: print(f"Opening {doc.chemin_fichier}"), 
+                            style="minor"
+                        ),
+                        rio.Button(
+                            "Supprimer",
+                            icon="material/delete",
+                            on_press=lambda d=doc.id: self.on_delete_document_request(d),
+                            style="minor"
+                        ),
+                        spacing=2,
+                        align_y=0.5
+                    ),
+                    margin=0.5
+                )
+            )
+            
+        return rio.Column(
+            rio.Row(
+                rio.Text(f"{len(documents)} document(s)", style="heading3"),
+                rio.Spacer(),
+                rio.Button(
+                    "Ajouter un document",
+                    icon="material/upload_file",
+                    on_press=self.on_add_document_click,
+                    style="major"
+                ),
+                spacing=2,
+                align_y=0.5
+            ),
+            
+            rio.Spacer(height=1),
+            
+            rio.Column(*doc_cards, spacing=1) if doc_cards else rio.Column(
+                rio.Icon("material/folder_off", fill=rio.Color.GREY, min_width=3, min_height=3),
+                rio.Text("Aucun document", style=rio.TextStyle(fill=rio.Color.GREY)),
+                align_x=0.5,
+                spacing=1,
+                margin_y=2
+            ),
+            
+            spacing=1
+        )
+
     def _build_historique_tab(self) -> rio.Component:
         """Build the history tab content"""
         db = next(get_db())
@@ -376,6 +555,7 @@ class DossierDetailPage(rio.Component):
                                 f"Statut modifié : {item.ancien_statut} ➔ {item.nouveau_statut}",
                                 style=rio.TextStyle(font_weight="bold")
                             ),
+                            rio.Text(f"Par : {item.user.username}" if item.user else "Par : Inconnu", style="text-dim"),
                             rio.Text(item.commentaire or "", style="text-dim"),
                             spacing=0.5
                         ),

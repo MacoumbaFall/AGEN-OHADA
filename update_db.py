@@ -1,8 +1,6 @@
 from src.database import engine, Base
-from src.models.dossier import Dossier, DossierParties, DossierHistorique
-from src.models.client import Client
-from src.models.user import User
+from src.models.template import Template
 
-print("Updating database schema...")
+# This will create the templates table if it doesn't exist
 Base.metadata.create_all(bind=engine)
-print("Database schema updated successfully.")
+print("Database schema updated.")
