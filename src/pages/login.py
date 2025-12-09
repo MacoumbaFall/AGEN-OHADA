@@ -42,7 +42,11 @@ class LoginPage(rio.Component):
                 text=self.bind().password,
                 is_secret=True,
             ),
-            rio.Text(self.bind().error_message, style=rio.TextStyle(fill=rio.Color.RED)) if self.error_message else rio.Text(""),,
+            rio.Text(self.bind().error_message, style=rio.TextStyle(fill=rio.Color.RED)) if self.error_message else rio.Text(""),
+            rio.Button(
+                "Se connecter",
+                on_press=self.on_login,
+            ),
             spacing=1,
             margin=2,
             align_x=0.5,

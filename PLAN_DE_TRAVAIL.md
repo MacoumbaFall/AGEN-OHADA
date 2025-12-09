@@ -1,11 +1,31 @@
 # Plan de Travail - AGEN-OHADA
 **Application de Gestion d'Étude Notariale OHADA**
 
-Version: 1.0.0 | Date de création: 01/12/2025
+Version: 1.0.0 | Date de création: 01/12/2025 | Dernière mise à jour: 09/12/2025
 
 ---
 
-## Phase 0 : Configuration de l'Infrastructure (En cours)
+## 📊 État Actuel du Projet
+
+**Progression globale : ~50%**
+
+| Phase | Statut | Progression |
+|-------|--------|-------------|
+| Phase 0 : Infrastructure | ✅ Terminé | 100% |
+| Phase 1 : Authentification | ✅ Terminé | 100% |
+| Phase 2 : Gestion Dossiers | ✅ Terminé | 100% |
+| Phase 3 : Rédaction Actes | 📋 À venir | 0% |
+| Phase 4 : Formalités | 📋 À venir | 0% |
+| Phase 5 : Comptabilité | 📋 À venir | 0% |
+| Phase 6 : Tests | 📋 À venir | 0% |
+| Phase 7 : Déploiement | 📋 À venir | 0% |
+
+**Base de données :** PostgreSQL 18.1 - 12 tables opérationnelles  
+**Repository :** [MacoumbaFall/AGEN-OHADA](https://github.com/MacoumbaFall/AGEN-OHADA)
+
+---
+
+## Phase 0 : Configuration de l'Infrastructure - ✅ TERMINÉ
 
 ### ✅ Complété
 - [x] Rédaction et validation du Cahier des Charges (v1.0.0)
@@ -15,14 +35,12 @@ Version: 1.0.0 | Date de création: 01/12/2025
 - [x] Création du schéma de base de données SQL
 - [x] Configuration des fichiers de base (.gitignore, requirements.txt, README.md)
 - [x] Test de l'application Rio (serveur fonctionnel)
+- [x] Installation de PostgreSQL (version 18.1)
+- [x] Initialisation de Git et création du repository GitHub
+- [x] Configuration de la base de données (agen_ohada_db)
+- [x] Création des modèles SQLAlchemy (12 tables opérationnelles)
 
-### 🔄 En cours
-- [ ] Installation de PostgreSQL
-- [ ] Initialisation de Git et création du repository GitHub
-- [ ] Configuration de la base de données
-- [ ] Création des modèles SQLAlchemy
-
-### Durée estimée : 1-2 jours
+### Durée réelle : 2 jours
 
 ---
 
@@ -65,7 +83,7 @@ Mettre en place l'infrastructure de base et le système d'authentification.
 
 ---
 
-## Phase 2 : Module Gestion des Dossiers (En cours - 85% complété)
+## Phase 2 : Module Gestion des Dossiers - ✅ TERMINÉ
 
 ### Objectif
 Permettre la création, consultation et gestion des dossiers notariaux.
@@ -87,20 +105,21 @@ Permettre la création, consultation et gestion des dossiers notariaux.
 3. **Statuts et Workflow**
    - [x] Gestion des statuts (OUVERT, INSTRUCTION, SIGNATURE, etc.)
    - [x] Changement de statut avec validation
-   - [ ] Historique des changements de statut
+   - [x] Historique des changements de statut avec attribution utilisateur
 
 4. **GED (Gestion Électronique de Documents)**
-   - [ ] Upload de fichiers (PDF, Images)
-   - [ ] Classement par type de document
-   - [ ] Visualisation des documents
-   - [ ] Téléchargement
+   - [x] Upload de fichiers (PDF, Images)
+   - [x] Classement par type de document
+   - [x] Visualisation des documents
+   - [x] Téléchargement et suppression
 
 ### Livrables
 - ✅ Module complet de gestion des dossiers (CRUD)
 - ✅ Base de données clients opérationnelle
-- ⏳ Système de GED fonctionnel
+- ✅ Système de GED fonctionnel
+- ✅ Historique complet des modifications de statut
 
-### Durée estimée : 5-7 jours
+### Durée réelle : 7 jours
 
 ---
 
@@ -280,11 +299,18 @@ Mettre l'application en production.
 
 ## Prochaines Actions Immédiates
 
-1. ✅ Initialiser Git et créer le repository GitHub
-2. ⏳ Installer PostgreSQL
-3. ⏳ Configurer la connexion à la base de données
-4. ⏳ Créer les premiers modèles SQLAlchemy
-5. ⏳ Développer la page de login
+### Phase 2 - Finalisation (15% restant)
+1. ⏳ Compléter l'historique des changements de statut
+2. ⏳ Implémenter la GED (Gestion Électronique de Documents)
+   - Upload de fichiers (PDF, Images)
+   - Classement par type de document
+   - Visualisation et téléchargement
+3. ⏳ Tests complets de Phase 2
+
+### Phase 3 - Module Rédaction d'Actes (Prochaine étape)
+4. 📋 Créer la table Templates en DB
+5. 📋 Développer l'interface de gestion des templates
+6. 📋 Implémenter le système de variables dynamiques
 
 ---
 

@@ -6,6 +6,7 @@ from src.models.client import Client
 from src.pages.add_partie_dialog import AddPartieDialog
 from src.pages.add_document_dialog import AddDocumentDialog
 from datetime import datetime
+import os
 
 class DossierDetailPage(rio.Component):
     """
@@ -37,12 +38,30 @@ class DossierDetailPage(rio.Component):
         """Fetch dossier from database"""
         try:
             db = next(get_db())
-            self.dossier = db.query(Dossier).filter(Dossier.id == self.dossier_id).first()
+            # Eagerly load the dossier with all relationships to avoid lazy-loading issues
+            from sqlalchemy.orm import joinedload
             
-            if not self.dossier:
+            dossier = db.query(Dossier).options(
+                joinedload(Dossier.responsable),
+                joinedload(Dossier.parties_associations).joinedload(DossierParties.client),
+                joinedload(Dossier.historique).joinedload(DossierHistorique.user),
+                joinedload(Dossier.documents)
+            ).filter(Dossier.id == self.dossier_id).first()
+            
+            if not dossier:
                 self.error_message = "Dossier non trouvé"
+                return
+            
+            # Detach from session to make it accessible after session closes
+            db.expunge(dossier)
+            self.dossier = dossier
+            
+            # Force refresh to trigger re-render with loaded data
+            self.force_refresh()
+            
         except Exception as e:
             self.error_message = f"Erreur lors du chargement : {str(e)}"
+            print(f"Error loading dossier: {str(e)}")  # Debug logging
     
     def on_back_click(self):
         """Handle back button"""
@@ -463,8 +482,8 @@ class DossierDetailPage(rio.Component):
     
     def _build_documents_tab(self) -> rio.Component:
         """Build the documents tab content"""
-        db = next(get_db())
-        documents = db.query(Document).filter(Document.dossier_id == self.dossier_id).all()
+        # Use the eagerly-loaded documents from the dossier
+        documents = self.dossier.documents if self.dossier else []
         
         doc_cards = []
         for doc in documents:
@@ -487,9 +506,8 @@ class DossierDetailPage(rio.Component):
                         rio.Button(
                             "Ouvrir",
                             icon="material/visibility",
-                            # In a real app, this would open the file URL
-                            # For local, we might need a way to serve files or just show path
-                            on_press=lambda: print(f"Opening {doc.chemin_fichier}"), 
+                            # Open file with default system viewer
+                            on_press=lambda path=doc.chemin_fichier: os.startfile(path) if os.path.exists(path) else print(f"File not found: {path}"), 
                             style="minor"
                         ),
                         rio.Button(
@@ -534,12 +552,12 @@ class DossierDetailPage(rio.Component):
 
     def _build_historique_tab(self) -> rio.Component:
         """Build the history tab content"""
-        db = next(get_db())
-        
-        # Get history for this dossier
-        history = db.query(DossierHistorique).filter(
-            DossierHistorique.dossier_id == self.dossier_id
-        ).order_by(DossierHistorique.date_changement.desc()).all()
+        # Use the eagerly-loaded history from the dossier
+        history = sorted(
+            self.dossier.historique if self.dossier else [],
+            key=lambda x: x.date_changement,
+            reverse=True
+        )
         
         history_items = []
         for item in history:
@@ -585,17 +603,13 @@ class DossierDetailPage(rio.Component):
     
     def _build_parties_tab(self) -> rio.Component:
         """Build the parties tab content"""
-        db = next(get_db())
+        # Use the eagerly-loaded parties from the dossier
+        parties_associations = self.dossier.parties_associations if self.dossier else []
         
-        # Get all parties for this dossier
-        parties = db.query(DossierParties, Client).join(
-            Client, DossierParties.client_id == Client.id
-        ).filter(
-            DossierParties.dossier_id == self.dossier_id
-        ).all()
         
         partie_cards = []
-        for partie_assoc, client in parties:
+        for partie_assoc in parties_associations:
+            client = partie_assoc.client
             # Format client name
             if client.type_client == "PHYSIQUE":
                 client_name = f"{client.prenom} {client.nom}"
@@ -645,7 +659,7 @@ class DossierDetailPage(rio.Component):
         
         return rio.Column(
             rio.Row(
-                rio.Text(f"{len(parties)} partie(s)", style="heading3"),
+                rio.Text(f"{len(parties_associations)} partie(s)", style="heading3"),
                 rio.Spacer(),
                 rio.Button(
                     "Ajouter une partie",

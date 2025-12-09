@@ -27,6 +27,7 @@ class Dossier(Base):
     parties_associations = relationship("DossierParties", back_populates="dossier")
     historique = relationship("DossierHistorique", back_populates="dossier", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="dossier", cascade="all, delete-orphan")
+    actes = relationship("Acte", back_populates="dossier", cascade="all, delete-orphan")
 
 
 class DossierParties(Base):
@@ -36,7 +37,7 @@ class DossierParties(Base):
     client_id = Column(Integer, ForeignKey("clients.id"), primary_key=True)
     role_dans_acte = Column(String, nullable=False)
 
-    dossier = relationship("Dossier", back_populates="client_associations")
+    dossier = relationship("Dossier", back_populates="parties_associations")
     client = relationship("Client", back_populates="dossier_associations")
 
 

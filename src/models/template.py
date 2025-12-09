@@ -10,5 +10,6 @@ class Template(Base):
     type_acte = Column(String, nullable=False)  # VENTE, PROCURATION, etc.
     contenu = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
+    variables = Column(Text, nullable=True)  # JSON string of variable names
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
