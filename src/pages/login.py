@@ -1,3 +1,4 @@
+from __future__ import annotations
 import rio
 from src.database import get_db
 from src.models.user import User

@@ -1,6 +1,8 @@
+from __future__ import annotations
 import rio
 from src.database import get_db
 from src.models.dossier import Dossier, DossierParties, DossierHistorique, Document
+from src.models.acte import Acte
 from src.models.user import User
 from src.models.client import Client
 from src.pages.add_partie_dialog import AddPartieDialog
@@ -15,7 +17,7 @@ class DossierDetailPage(rio.Component):
     dossier_id: int
     dossier: Dossier = None
     error_message: str = ""
-    current_tab: str = "parties"  # parties, documents, historique
+    current_tab: str = "actes"  # parties, documents, historique, actes
     show_add_partie_dialog: bool = False
     partie_to_delete: tuple = None  # (dossier_id, client_id)
     show_delete_partie_dialog: bool = False
@@ -29,13 +31,17 @@ class DossierDetailPage(rio.Component):
     on_back: rio.EventHandler[[]] = None
     on_edit: rio.EventHandler[[int]] = None
     on_delete: rio.EventHandler[[int]] = None
+    on_new_acte: rio.EventHandler[[]] = None
+    on_edit_acte: rio.EventHandler[[int]] = None
     
+    @rio.event.on_mount
     def on_mount(self):
         """Load dossier data when component mounts"""
         self.load_dossier()
     
     def load_dossier(self):
         """Fetch dossier from database"""
+        db = None
         try:
             db = next(get_db())
             # Eagerly load the dossier with all relationships to avoid lazy-loading issues
@@ -45,23 +51,28 @@ class DossierDetailPage(rio.Component):
                 joinedload(Dossier.responsable),
                 joinedload(Dossier.parties_associations).joinedload(DossierParties.client),
                 joinedload(Dossier.historique).joinedload(DossierHistorique.user),
-                joinedload(Dossier.documents)
+                joinedload(Dossier.documents),
+                joinedload(Dossier.actes)
             ).filter(Dossier.id == self.dossier_id).first()
             
             if not dossier:
                 self.error_message = "Dossier non trouvé"
+                print(f"[ERROR] Dossier with ID {self.dossier_id} not found")
                 return
             
             # Detach from session to make it accessible after session closes
             db.expunge(dossier)
             self.dossier = dossier
-            
-            # Force refresh to trigger re-render with loaded data
-            self.force_refresh()
+            print(f"[INFO] Dossier {dossier.numero_dossier} loaded successfully")
             
         except Exception as e:
             self.error_message = f"Erreur lors du chargement : {str(e)}"
-            print(f"Error loading dossier: {str(e)}")  # Debug logging
+            print(f"[ERROR] Error loading dossier: {str(e)}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            if db:
+                db.close()
     
     def on_back_click(self):
         """Handle back button"""
@@ -336,6 +347,11 @@ class DossierDetailPage(rio.Component):
                             on_press=lambda: self.on_tab_change("documents")
                         ),
                         rio.Button(
+                            "Actes",
+                            style="major" if self.current_tab == "actes" else "minor",
+                            on_press=lambda: self.on_tab_change("actes")
+                        ),
+                        rio.Button(
                             "Historique",
                             style="major" if self.current_tab == "historique" else "minor",
                             on_press=lambda: self.on_tab_change("historique")
@@ -359,8 +375,7 @@ class DossierDetailPage(rio.Component):
         
         # Overlay add partie dialog if needed
         if self.show_add_partie_dialog:
-            return rio.Overlay(
-                main_content,
+            main_content = rio.Overlay(
                 rio.Card(
                     AddPartieDialog(
                         dossier_id=self.dossier_id,
@@ -369,7 +384,6 @@ class DossierDetailPage(rio.Component):
                     ),
                     color=rio.Color.WHITE,
                     min_width=40,
-                    max_height=35,
                     align_x=0.5,
                     align_y=0.5
                 )
@@ -377,8 +391,7 @@ class DossierDetailPage(rio.Component):
         
         # Overlay delete partie confirmation if needed
         if self.show_delete_partie_dialog:
-            return rio.Overlay(
-                main_content,
+            main_content = rio.Overlay(
                 rio.Card(
                     rio.Column(
                         rio.Icon("material/warning", fill=rio.Color.from_hex("f59e0b"), min_width=4, min_height=4),
@@ -407,6 +420,8 @@ class DossierDetailPage(rio.Component):
                         margin=2,
                         align_x=0.5
                     ),
+                    color=rio.Color.WHITE,
+                    min_width=30,
                     align_x=0.5,
                     align_y=0.5
                 )
@@ -414,8 +429,7 @@ class DossierDetailPage(rio.Component):
         
         # Overlay add document dialog
         if self.show_add_document_dialog:
-            return rio.Overlay(
-                main_content,
+            main_content = rio.Overlay(
                 rio.Card(
                     AddDocumentDialog(
                         dossier_id=self.dossier_id,
@@ -431,8 +445,7 @@ class DossierDetailPage(rio.Component):
             
         # Overlay delete document confirmation
         if self.show_delete_document_dialog:
-            return rio.Overlay(
-                main_content,
+            main_content = rio.Overlay(
                 rio.Card(
                     rio.Column(
                         rio.Icon("material/warning", fill=rio.Color.from_hex("f59e0b"), min_width=4, min_height=4),
@@ -478,6 +491,8 @@ class DossierDetailPage(rio.Component):
             return self._build_documents_tab()
         elif self.current_tab == "historique":
             return self._build_historique_tab()
+        elif self.current_tab == "actes":
+            return self._build_actes_tab()
         return rio.Text("")
     
     def _build_documents_tab(self) -> rio.Component:
@@ -540,7 +555,7 @@ class DossierDetailPage(rio.Component):
             rio.Spacer(height=1),
             
             rio.Column(*doc_cards, spacing=1) if doc_cards else rio.Column(
-                rio.Icon("material/folder_off", fill=rio.Color.GREY, min_width=3, min_height=3),
+                rio.Icon("material/folder_open", fill=rio.Color.GREY, min_width=3, min_height=3),
                 rio.Text("Aucun document", style=rio.TextStyle(fill=rio.Color.GREY)),
                 align_x=0.5,
                 spacing=1,
@@ -674,8 +689,77 @@ class DossierDetailPage(rio.Component):
             rio.Spacer(height=1),
             
             rio.Column(*partie_cards, spacing=1) if partie_cards else rio.Column(
-                rio.Icon("material/groups_off", fill=rio.Color.GREY, min_width=3, min_height=3),
+                rio.Icon("material/group_off", fill=rio.Color.GREY, min_width=3, min_height=3),
                 rio.Text("Aucune partie ajoutée", style=rio.TextStyle(fill=rio.Color.GREY)),
+                align_x=0.5,
+                spacing=1,
+                margin_y=2
+            ),
+            
+            spacing=1
+        )
+    
+    def _build_actes_tab(self) -> rio.Component:
+        """Build the actes tab content"""
+        # Use the eagerly-loaded actes from the dossier
+        actes = sorted(
+            self.dossier.actes if self.dossier else [],
+            key=lambda x: x.created_at,
+            reverse=True
+        )
+        
+        acte_cards = []
+        for acte in actes:
+            status_color = rio.Color.GREY
+            if acte.statut == "FINALISE":
+                status_color = rio.Color.from_hex("06b6d4")
+            elif acte.statut == "SIGNE":
+                status_color = rio.Color.from_hex("10b981")
+            else: # BROUILLON
+                status_color = rio.Color.from_hex("f59e0b")
+
+            acte_cards.append(
+                rio.Card(
+                    rio.Row(
+                        rio.Icon("material/gavel", fill=status_color),
+                        rio.Column(
+                            rio.Text(acte.titre, style="heading3"),
+                            rio.Text(f"{acte.statut}", style=rio.TextStyle(fill=status_color)),
+                            spacing=0.3
+                        ),
+                        rio.Spacer(),
+                        rio.Button(
+                            "Ouvrir/Modifier",
+                            icon="material/edit",
+                            on_press=lambda id=acte.id: self.on_edit_acte(id) if self.on_edit_acte else None,
+                            style="minor"
+                        ),
+                        spacing=2,
+                        align_y=0.5
+                    ),
+                    margin=0.5
+                )
+            )
+            
+        return rio.Column(
+            rio.Row(
+                rio.Text(f"{len(actes)} acte(s)", style="heading3"),
+                rio.Spacer(),
+                rio.Button(
+                    "Rédiger un acte",
+                    icon="material/post_add",
+                    on_press=self.on_new_acte if self.on_new_acte else None,
+                    style="major"
+                ),
+                spacing=2,
+                align_y=0.5
+            ),
+            
+            rio.Spacer(height=1),
+            
+            rio.Column(*acte_cards, spacing=1) if acte_cards else rio.Column(
+                rio.Icon("material/description", fill=rio.Color.GREY, min_width=3, min_height=3),
+                rio.Text("Aucun acte rédigé", style=rio.TextStyle(fill=rio.Color.GREY)),
                 align_x=0.5,
                 spacing=1,
                 margin_y=2

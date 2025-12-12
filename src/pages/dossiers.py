@@ -1,3 +1,4 @@
+from __future__ import annotations
 import rio
 from src.database import get_db
 from src.models.dossier import Dossier
@@ -60,6 +61,9 @@ class DossierListPage(rio.Component):
         return colors.get(statut, rio.Color.GREY)
     
     def build(self) -> rio.Component:
+        # Debug print
+        print(f"DEBUG: search_query value: {getattr(self, 'search_query', 'NOT_FOUND')}")
+
         # Fetch filtered dossiers
         dossiers = self.get_filtered_dossiers()
         
@@ -141,7 +145,7 @@ class DossierListPage(rio.Component):
                 align_y=0.5
             ),
             
-            rio.Spacer(height=2),
+            rio.Spacer(min_height=2),
             
             # Search and Filters
             rio.Card(
@@ -193,7 +197,7 @@ class DossierListPage(rio.Component):
                 grow_x=True
             ),
             
-            rio.Spacer(height=1),
+            rio.Spacer(min_height=1),
             
             # Results count
             rio.Text(
@@ -201,7 +205,7 @@ class DossierListPage(rio.Component):
                 style="text-dim"
             ),
             
-            rio.Spacer(height=1),
+            rio.Spacer(min_height=1),
             
             # Dossiers list
             content,

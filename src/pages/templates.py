@@ -1,19 +1,21 @@
+from __future__ import annotations
 import rio
-from src.database import get_db
+from dataclasses import field
+from src.database import SessionLocal
 from src.models.template import Template
-from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
 
 class TemplatesPage(rio.Component):
     """
     Page for managing document templates
     """
     # State
-    templates: list[Template] = []
+    templates: list[Template] = field(default_factory=list)
     selected_template_id: int = None
     is_editing: bool = False
     
     # Form State
-    form_titre: str = ""
+    form_nom: str = ""
     form_type: str = "VENTE"
     form_description: str = ""
     form_contenu: str = ""
@@ -24,15 +26,21 @@ class TemplatesPage(rio.Component):
         self.load_templates()
         
     def load_templates(self):
+        session = SessionLocal()
         try:
-            db = next(get_db())
-            self.templates = db.query(Template).order_by(Template.titre).all()
+            self.templates = session.query(Template).order_by(Template.nom).all()
+            # Detach objects so they can be used after session close if needed, 
+            # though accessing lazy props will fail. 
+            # Since Template has no relationships, this is fine.
+            session.expunge_all() 
         except Exception as e:
             self.error_message = f"Erreur de chargement: {str(e)}"
+        finally:
+            session.close()
 
     def on_new_click(self):
         self.selected_template_id = None
-        self.form_titre = ""
+        self.form_nom = ""
         self.form_type = "VENTE"
         self.form_description = ""
         self.form_contenu = ""
@@ -42,11 +50,11 @@ class TemplatesPage(rio.Component):
 
     def on_edit_click(self, template_id: int):
         self.selected_template_id = template_id
+        session = SessionLocal()
         try:
-            db = next(get_db())
-            template = db.query(Template).filter(Template.id == template_id).first()
+            template = session.query(Template).filter(Template.id == template_id).first()
             if template:
-                self.form_titre = template.titre
+                self.form_nom = template.nom
                 self.form_type = template.type_acte
                 self.form_description = template.description or ""
                 self.form_contenu = template.contenu
@@ -55,60 +63,68 @@ class TemplatesPage(rio.Component):
                 self.success_message = ""
         except Exception as e:
             self.error_message = f"Erreur: {str(e)}"
+        finally:
+            session.close()
 
     def on_cancel_edit(self):
         self.is_editing = False
         self.selected_template_id = None
 
     def on_save(self):
-        if not self.form_titre:
-            self.error_message = "Le titre est obligatoire"
+        if not self.form_nom:
+            self.error_message = "Le nom est obligatoire"
             return
             
         if not self.form_contenu:
             self.error_message = "Le contenu est obligatoire"
             return
 
+        session = SessionLocal()
         try:
-            db = next(get_db())
-            
             if self.selected_template_id:
                 # Update
-                template = db.query(Template).filter(Template.id == self.selected_template_id).first()
+                template = session.query(Template).filter(Template.id == self.selected_template_id).first()
                 if template:
-                    template.titre = self.form_titre
+                    template.nom = self.form_nom
                     template.type_acte = self.form_type
                     template.description = self.form_description
                     template.contenu = self.form_contenu
             else:
                 # Create
                 template = Template(
-                    titre=self.form_titre,
+                    nom=self.form_nom,
                     type_acte=self.form_type,
                     description=self.form_description,
                     contenu=self.form_contenu
                 )
-                db.add(template)
+                session.add(template)
             
-            db.commit()
-            self.load_templates()
+            session.commit()
             self.is_editing = False
             self.success_message = "Template enregistré avec succès"
-            
-        except Exception as e:
+        except SQLAlchemyError as e:
+            session.rollback()
             self.error_message = f"Erreur d'enregistrement: {str(e)}"
-            db.rollback()
+        except Exception as e:
+            session.rollback()
+            self.error_message = f"Erreur inattendue: {str(e)}"
+        finally:
+            session.close()
+            # Reload templates to reflect changes
+            self.load_templates()
 
     def on_delete_click(self, template_id: int):
+        session = SessionLocal()
         try:
-            db = next(get_db())
-            template = db.query(Template).filter(Template.id == template_id).first()
+            template = session.query(Template).filter(Template.id == template_id).first()
             if template:
-                db.delete(template)
-                db.commit()
-                self.load_templates()
+                session.delete(template)
+                session.commit()
         except Exception as e:
             self.error_message = f"Erreur de suppression: {str(e)}"
+        finally:
+            session.close()
+            self.load_templates()
 
     def build(self) -> rio.Component:
         if self.is_editing:
@@ -122,7 +138,7 @@ class TemplatesPage(rio.Component):
                 rio.Card(
                     rio.Row(
                         rio.Column(
-                            rio.Text(t.titre, style="heading3"),
+                            rio.Text(t.nom, style="heading3"),
                             rio.Text(f"{t.type_acte} - {t.description or ''}", style="text-dim"),
                             spacing=0.5
                         ),
@@ -156,7 +172,7 @@ class TemplatesPage(rio.Component):
             
             rio.Row(
                 rio.Column(
-                    rio.TextInput(label="Titre", text=self.bind().form_titre),
+                    rio.TextInput(label="Nom du modèle", text=self.bind().form_nom),
                     rio.Dropdown(
                         label="Type d'Acte",
                         options=["VENTE", "PROCURATION", "TESTAMENT", "BAIL", "AUTRE"],

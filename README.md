@@ -51,7 +51,7 @@ Application Full-Stack développée avec Rio Framework (Python) pour la gestion 
 ## 🏃 Lancement
 
 ```bash
-python src/main.py
+python -m src.main
 ```
 
 L'application sera accessible sur `http://localhost:8000`

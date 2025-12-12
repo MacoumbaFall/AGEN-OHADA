@@ -16,7 +16,7 @@ class AddDocumentDialog(rio.Component):
     # Form fields
     titre: str = ""
     type_document: str = "PIECE_IDENTITE"
-    file: rio.FileInfo = None
+    file: rio.FileInfo | None = None
     
     error_message: str = ""
     is_loading: bool = False
@@ -27,7 +27,7 @@ class AddDocumentDialog(rio.Component):
             # Auto-fill title with filename if empty
             self.titre = file.name
             
-    def on_submit(self):
+    async def on_submit(self):
         if not self.titre:
             self.error_message = "Le titre est obligatoire"
             return
@@ -49,9 +49,10 @@ class AddDocumentDialog(rio.Component):
             filename = f"{self.dossier_id}_{timestamp}_{self.file.name}"
             file_path = os.path.join(upload_dir, filename)
             
-            # Save file
+            # Save file - use await to read bytes asynchronously
+            file_content = await self.file.read_bytes()
             with open(file_path, "wb") as f:
-                f.write(self.file.read())
+                f.write(file_content)
                 
             # Save to database
             db = next(get_db())
@@ -60,7 +61,7 @@ class AddDocumentDialog(rio.Component):
                 titre=self.titre,
                 type_document=self.type_document,
                 chemin_fichier=file_path,
-                taille_fichier=self.file.size,
+                taille_fichier=self.file.size_in_bytes,
                 date_upload=datetime.utcnow()
             )
             
@@ -72,6 +73,9 @@ class AddDocumentDialog(rio.Component):
                 
         except Exception as e:
             self.error_message = f"Erreur lors de l'upload : {str(e)}"
+            print(f"Upload error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             # Try to cleanup file if db save failed
             if 'file_path' in locals() and os.path.exists(file_path):
                 try:
@@ -87,7 +91,8 @@ class AddDocumentDialog(rio.Component):
             
             rio.TextInput(
                 label="Titre du document",
-                text=self.bind().titre
+                text=self.titre,
+                on_change=lambda event: setattr(self, 'titre', event.text)
             ),
             
             rio.Dropdown(
@@ -99,13 +104,14 @@ class AddDocumentDialog(rio.Component):
                     "CORRESPONDANCE",
                     "AUTRE"
                 ],
-                selected_value=self.bind().type_document
+                selected_value=self.type_document,
+                on_change=lambda event: setattr(self, 'type_document', event.value)
             ),
             
-            rio.FilePicker(
-                label="Choisir un fichier",
-                on_choose=self.on_file_upload,
-                file_types=["application/pdf", "image/*"]
+            rio.FilePickerArea(
+                content="Choisir un fichier",
+                on_pick_file=lambda event: self.on_file_upload(event.file),
+                file_types=[".pdf", ".jpg", ".jpeg", ".png"]
             ),
             
             rio.Text(

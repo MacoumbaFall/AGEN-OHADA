@@ -6,10 +6,10 @@ class Template(Base):
     __tablename__ = "templates"
 
     id = Column(Integer, primary_key=True, index=True)
-    titre = Column(String, nullable=False)
+    nom = Column(String, nullable=False)  # Matches SQL 'nom'
     type_acte = Column(String, nullable=False)  # VENTE, PROCURATION, etc.
     contenu = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
-    variables = Column(Text, nullable=True)  # JSON string of variable names
+    # variables column does not exist in DB currently
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

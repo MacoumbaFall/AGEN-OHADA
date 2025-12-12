@@ -14,7 +14,7 @@ Version: 1.0.0 | Date de création: 01/12/2025 | Dernière mise à jour: 09/12/2
 | Phase 0 : Infrastructure | ✅ Terminé | 100% |
 | Phase 1 : Authentification | ✅ Terminé | 100% |
 | Phase 2 : Gestion Dossiers | ✅ Terminé | 100% |
-| Phase 3 : Rédaction Actes | 📋 À venir | 0% |
+| Phase 3 : Rédaction Actes | 🔄 En cours | 10% |
 | Phase 4 : Formalités | 📋 À venir | 0% |
 | Phase 5 : Comptabilité | 📋 À venir | 0% |
 | Phase 6 : Tests | 📋 À venir | 0% |
@@ -299,18 +299,13 @@ Mettre l'application en production.
 
 ## Prochaines Actions Immédiates
 
-### Phase 2 - Finalisation (15% restant)
-1. ⏳ Compléter l'historique des changements de statut
-2. ⏳ Implémenter la GED (Gestion Électronique de Documents)
-   - Upload de fichiers (PDF, Images)
-   - Classement par type de document
-   - Visualisation et téléchargement
-3. ⏳ Tests complets de Phase 2
+## Prochaines Actions Immédiates
 
-### Phase 3 - Module Rédaction d'Actes (Prochaine étape)
-4. 📋 Créer la table Templates en DB
-5. 📋 Développer l'interface de gestion des templates
-6. 📋 Implémenter le système de variables dynamiques
+### Phase 3 - Module Rédaction d'Actes (En cours)
+1. 🔄 Créer la table Templates en DB (fait via migration phase3)
+2. 📋 Créer l'interface de gestion des templates
+3. 📋 Implémenter le système de variables dynamiques
+4. 📋 Créer l'interface d'édition des actes
 
 ---
 

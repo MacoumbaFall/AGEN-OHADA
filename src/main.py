@@ -1,3 +1,4 @@
+from __future__ import annotations
 import rio
 from src.pages.login import LoginPage
 from src.pages.dashboard import DashboardPage
@@ -6,6 +7,7 @@ from src.pages.dossier_form import DossierFormPage
 from src.pages.dossier_detail import DossierDetailPage
 from src.pages.dossier_edit import DossierEditPage
 from src.pages.templates import TemplatesPage
+from src.pages.acte_edit import ActeEditPage
 from src.database import get_db
 from src.models.dossier import Dossier
 
@@ -18,6 +20,8 @@ class MainApp(rio.Component):
     current_user: str = ""
     current_page: str = "dashboard"
     current_dossier_id: int = None
+    current_acte_id: int = None
+
     
     # Delete confirmation state
     show_delete_dialog: bool = False
@@ -27,19 +31,25 @@ class MainApp(rio.Component):
         """Called when user successfully logs in"""
         self.is_authenticated = True
         self.current_user = username
-        print(f"✅ User {username} logged in successfully")
+        print(f"[INFO] User {username} logged in successfully")
     
     def on_logout(self):
         """Called when user logs out"""
         self.is_authenticated = False
         self.current_user = ""
         self.current_page = "dashboard"
-        print("👋 User logged out")
+        print("[INFO] User logged out")
         
-    def navigate_to(self, page: str, dossier_id: int = None):
+    def navigate_to(self, page: str, dossier_id: int = None, acte_id: int = None):
         """Navigate to a specific page"""
         self.current_page = page
-        self.current_dossier_id = dossier_id
+        if dossier_id is not None:
+             self.current_dossier_id = dossier_id
+        if acte_id is not None:
+             self.current_acte_id = acte_id
+        elif page == "acte_new":
+             self.current_acte_id = None
+
     
     def on_delete_request(self, dossier_id: int):
         """Show delete confirmation dialog"""
@@ -102,7 +112,9 @@ class MainApp(rio.Component):
                 dossier_id=self.current_dossier_id,
                 on_back=lambda: self.navigate_to("dossiers"),
                 on_edit=lambda dossier_id: self.navigate_to("dossier_edit", dossier_id),
-                on_delete=self.on_delete_request
+                on_delete=self.on_delete_request,
+                on_new_acte=lambda: self.navigate_to("acte_new", dossier_id=self.current_dossier_id),
+                on_edit_acte=lambda acte_id: self.navigate_to("acte_edit", dossier_id=self.current_dossier_id, acte_id=acte_id)
             )
         elif self.current_page == "dossier_edit":
             content = DossierEditPage(
@@ -110,6 +122,19 @@ class MainApp(rio.Component):
                 current_username=self.current_user,
                 on_cancel=lambda: self.navigate_to("dossier_detail", self.current_dossier_id),
                 on_success=lambda dossier_id: self.navigate_to("dossier_detail", dossier_id)
+            )
+        elif self.current_page == "acte_new":
+            content = ActeEditPage(
+                dossier_id=self.current_dossier_id,
+                on_cancel=lambda: self.navigate_to("dossier_detail", self.current_dossier_id),
+                on_success=lambda: self.navigate_to("dossier_detail", self.current_dossier_id)
+            )
+        elif self.current_page == "acte_edit":
+            content = ActeEditPage(
+                dossier_id=self.current_dossier_id,
+                acte_id=self.current_acte_id,
+                on_cancel=lambda: self.navigate_to("dossier_detail", self.current_dossier_id),
+                on_success=lambda: self.navigate_to("dossier_detail", self.current_dossier_id)
             )
         elif self.current_page == "templates":
             content = TemplatesPage()
